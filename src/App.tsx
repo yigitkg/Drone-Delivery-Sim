@@ -40,7 +40,7 @@ function MetricsGrid({
   const fmtKmOrM = (m: number) => (m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(0)} m`);
   const fmtEta = (s: number | null) => (s == null ? '-' : s >= 3600 ? `${Math.floor(s / 3600)}saat ${(Math.floor(s / 60) % 60)}dk` : `${Math.floor(s / 60)}dk ${Math.floor(s % 60)}sn`);
   const items = [
-    { label: 'Drone Hizi', value: `${speedKmh.toFixed(1)} km/sa` },
+    { label: 'Drone Hizi', value: `${(Number(speedKmh)||0).toFixed(1)} km/sa` },
     { label: 'Mesafe', value: fmtKmOrM(distanceM) },
     { label: 'Toplam Mesafe', value: fmtKmOrM(totalDistanceM) },
     { label: 'Kalan Mesafe', value: fmtKmOrM(remainingM) },
@@ -52,7 +52,7 @@ function MetricsGrid({
     { label: 'Irtifa', value: `${Math.round(altitudeM)} m` },
     { label: 'Batarya', value: `${batteryPct.toFixed(0)}%` },
     { label: 'Teslimat Adresi', value: deliveryAddress, wrap: true },
-    { label: 'Drone Sagligi', value: droneHealth },
+    { label: 'Drone Sağlığı', value: droneHealth === 'Iyi' ? 'İyi' : droneHealth },
     { label: 'Koordinat', value: coord, mono: true, wrap: true },
   ];
   return (
@@ -138,7 +138,7 @@ function App() {
           <Controls
             running={running}
             timeScale={timeScale}
-            speedKmh={speedKmh}
+            speedKmh={state.currentSpeedKmh}
             onStart={() => setRunning(true)}
             onPause={() => setRunning(false)}
             onReset={() => { setRunning(false); api.reset(); }}
@@ -146,7 +146,7 @@ function App() {
             onSpeed={(v: number) => setSpeedKmh(v)}
           />
           <MetricsGrid
-            speedKmh={speedKmh}
+            speedKmh={state.currentSpeedKmh}
             distanceM={state.distanceTraveledM}
             totalDistanceM={state.totalDistanceM}
             remainingM={state.remainingM}
