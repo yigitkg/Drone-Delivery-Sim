@@ -29,6 +29,12 @@ function MetricsGrid({
   position,
   weather,
   packageStatus,
+  pickupBranchCode,
+  droneSerial,
+  altitudeM,
+  batteryPct,
+  deliveryAddress,
+  droneHealth,
 }: any) {
   const coord = Array.isArray(position) ? `${position[0].toFixed(5)}, ${position[1].toFixed(5)}` : '-';
   const fmtKmOrM = (m: number) => (m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(0)} m`);
@@ -41,6 +47,12 @@ function MetricsGrid({
     { label: 'ETA', value: fmtEta(etaSec) },
     { label: 'Hava Durumu', value: weather },
     { label: 'Paket Durumu', value: packageStatus },
+    { label: 'Paket Alis Subesi', value: pickupBranchCode },
+    { label: 'Drone Seri No', value: droneSerial },
+    { label: 'Irtifa', value: `${Math.round(altitudeM)} m` },
+    { label: 'Batarya', value: `${batteryPct.toFixed(0)}%` },
+    { label: 'Teslimat Adresi', value: deliveryAddress, wrap: true },
+    { label: 'Drone Sagligi', value: droneHealth },
     { label: 'Koordinat', value: coord, mono: true, wrap: true },
   ];
   return (
@@ -112,6 +124,9 @@ function App() {
   const statusColor: any = state.status === 'Arrived' ? 'green' : running ? 'blue' : 'yellow'
   const weather = 'Acik, 24°C, Ruzgar 5 m/sn'
   const packageStatus = state.status === 'Arrived' ? 'Teslim Edildi' : running ? 'Dagitimda' : 'Hazirlaniyor'
+  const pickupBranchCode = 'BR-IST-012'
+  const droneSerial = 'DRN-AX45-2025-001'
+  const deliveryAddress = 'Bostanli Mah., 1803/1 Sk. No:12, Karsiyaka/Izmir'
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -139,6 +154,12 @@ function App() {
             position={state.position}
             weather={weather}
             packageStatus={packageStatus}
+            pickupBranchCode={pickupBranchCode}
+            droneSerial={droneSerial}
+            altitudeM={state.altitudeM}
+            batteryPct={state.batteryPct}
+            deliveryAddress={deliveryAddress}
+            droneHealth={state.droneHealth}
           />
         </div>
         <div className="w-full px-6 xl:px-8 2xl:px-12">

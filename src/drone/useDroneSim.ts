@@ -19,6 +19,9 @@ export interface DroneSimState {
   remainingM: number;
   etaSec: number | null;
   status: DroneStatus;
+  altitudeM: number;
+  batteryPct: number; // 0..100
+  droneHealth: 'Iyi' | 'Dikkat' | 'Kritik';
 }
 
 export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimControls) {
@@ -34,6 +37,9 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
       remainingM: totalM,
       etaSec: null,
       status: 'Idle',
+      altitudeM: 0,
+      batteryPct: 100,
+      droneHealth: 'Iyi',
     };
   });
 
@@ -53,6 +59,9 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
       remainingM: totalM,
       etaSec: null,
       status: controls.running ? 'EnRoute' : 'Idle',
+      altitudeM: controls.running ? 60 : 0,
+      batteryPct: 100,
+      droneHealth: 'Iyi',
     });
   }, [start[0], start[1], end[0], end[1]]);
 
@@ -93,6 +102,16 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
           status = 'Arrived';
         }
 
+        // Simple altitude model: cruise 60m AGL when en route, 0 when idle/arrived
+        const altitudeM = status === 'EnRoute' ? 60 : 0;
+
+        // Battery model: ~2% per km consumption based on ground distance
+        const consumedPct = (clamped / 1000) * 2; // %
+        const batteryPct = Math.max(0, 100 - consumedPct);
+        let droneHealth: DroneSimState['droneHealth'] = 'Iyi';
+        if (batteryPct <= 15) droneHealth = 'Kritik';
+        else if (batteryPct <= 25) droneHealth = 'Dikkat';
+
         return {
           position,
           progress,
@@ -101,6 +120,9 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
           remainingM,
           etaSec,
           status,
+          altitudeM,
+          batteryPct,
+          droneHealth,
         };
       });
       rafRef.current = requestAnimationFrame(loop);
@@ -128,4 +150,3 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
 
   return { state, api };
 }
-
