@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as turf from '@turf/turf';
 
 export type LatLng = [number, number]; // [lat, lng]
@@ -11,7 +11,20 @@ export interface DroneSimControls {
   timeScale?: number;
 }
 
- param($m) $block = $m.Groups[1].Value; if ($block -notmatch 'elapsedSec') { $block += "`n  elapsedSec: number;" }; "export interface DroneSimState {" + $block + "`n}" 
+export interface DroneSimState {
+  position: LatLng;
+  progress: number; // 0..1
+  distanceTraveledM: number;
+  totalDistanceM: number;
+  remainingM: number;
+  etaSec: number | null;
+  status: DroneStatus;
+  altitudeM: number;
+  batteryPct: number; // 0..100
+  droneHealth: 'Iyi' | 'Dikkat' | 'Kritik';
+  currentSpeedKmh: number;
+  elapsedSec: number;
+}
 
 export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimControls) {
   const [state, setState] = useState<DroneSimState>(() => {
@@ -30,6 +43,7 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
       batteryPct: 100,
       droneHealth: 'Iyi',
       currentSpeedKmh: 0,
+      elapsedSec: 0,
     };
   });
 
@@ -53,6 +67,7 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
       batteryPct: 100,
       droneHealth: 'Iyi',
       currentSpeedKmh: 0,
+      elapsedSec: 0,
     });
   }, [start[0], start[1], end[0], end[1]]);
 
@@ -72,29 +87,28 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
         const targetMps = (controls.speedKmh / 3.6) * timeScale;
         let distanceTraveledM = s.distanceTraveledM;
         let status: DroneStatus = s.status;
-
-        // Accel/decel model (m/s^2)
-        const accel = 2.5 * timeScale;
-        const remainingNow = Math.max(0, Math.max(0, totalM - distanceTraveledM));
-        const vAllowed = Math.sqrt(Math.max(0, 2 * accel * remainingNow));
-        const desiredMps = controls.running ? Math.min(targetMps, vAllowed) : 0; // no ramp if not running
-        const curMps = (s.currentSpeedKmh ?? 0) / 3.6;
         const dtSec = dt / 1000;
-        let nextMps = curMps;
-        if (desiredMps > curMps) nextMps = Math.min(desiredMps, curMps + accel * dtSec);
-        else if (desiredMps < curMps) nextMps = Math.max(desiredMps, curMps - accel * dtSec);
-        const speedMps = Math.max(0, nextMps);
+
+        // Linear profile: ramp-up first 5s, ramp-down last 5s
+        const elapsedSec = controls.running && status !== 'Arrived' ? s.elapsedSec + dtSec : s.elapsedSec;
+        const remainingM = Math.max(0, totalM - distanceTraveledM);
+        const remainingTimeAtTarget = targetMps > 0 ? remainingM / targetMps : Infinity;
+        const rampUpFactor = Math.min(1, elapsedSec / 5);
+        const rampDownFactor = remainingTimeAtTarget > 5 ? 1 : Math.max(0, remainingTimeAtTarget / 5);
+        const profileFactor = controls.running ? Math.min(rampUpFactor, rampDownFactor) : 0;
+        const speedMps = Math.max(0, targetMps * profileFactor);
 
         if (controls.running && status !== 'Arrived') {
-          distanceTraveledM += speedMps * (dt / 1000);
+          distanceTraveledM += speedMps * dtSec;
           status = 'EnRoute';
         } else if (!controls.running && s.progress === 0) {
           status = 'Idle';
         }
         const clamped = Math.min(distanceTraveledM, totalM);
         const progress = Math.max(0, Math.min(1, clamped / totalM));
-        const remainingM = Math.max(0, totalM - clamped);
-        const etaSec = controls.running && speedMps > 0 ? remainingM / speedMps : null;
+        const remainingMAfter = Math.max(0, totalM - clamped);
+        // Freeze ETA when paused by keeping last known value if speed is zero
+        const etaSec = speedMps > 0 ? (remainingMAfter / speedMps) : s.etaSec;
 
         // Compute along position
         const along = turf.along(line, (clamped / 1000), { units: 'kilometers' });
@@ -106,8 +120,8 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
           status = 'Arrived';
         }
 
-        // Simple altitude model: cruise 60m AGL when en route, 0 when idle/arrived
-        const altitudeM = controls.running ? 60 : 0;
+        // Keep altitude steady when paused; set to cruise (60) while en route, 0 on reset/arrive handled elsewhere
+        const altitudeM = controls.running ? 60 : s.altitudeM;
 
         // Battery model: ~2% per km consumption based on ground distance
         const consumedPct = (clamped / 1000) * 2; // %
@@ -121,13 +135,14 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
           progress,
           distanceTraveledM: clamped,
           totalDistanceM: totalM,
-          remainingM,
+          remainingM: remainingMAfter,
           etaSec,
           status,
           altitudeM,
           batteryPct,
           droneHealth,
           currentSpeedKmh: speedMps * 3.6,
+          elapsedSec,
         };
       });
       rafRef.current = requestAnimationFrame(loop);
@@ -153,10 +168,10 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
         batteryPct: 100,
         droneHealth: 'Iyi',
         currentSpeedKmh: 0,
+        elapsedSec: 0,
       });
     },
   };
 
   return { state, api };
 }
-

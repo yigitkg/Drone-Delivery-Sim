@@ -3,6 +3,7 @@ import './index.css'
 import { useMemo, useRef, useState } from 'react'
 import { MapDrone } from './map/MapDrone'
 import { useDroneSim } from './drone/useDroneSim'
+
 function StatusPill({ label, color }: { label: string; color: 'green' | 'yellow' | 'red' | 'blue' }) {
   const cls = color === 'green' ? 'status-green' : color === 'yellow' ? 'status-yellow' : color === 'red' ? 'status-red' : 'status-blue'
   return <span className={`status-pill ${cls}`}><span className="w-2 h-2 rounded-full bg-current inline-block"></span>{label}</span>
@@ -26,6 +27,7 @@ function MetricsGrid({
   totalDistanceM,
   remainingM,
   etaSec,
+  elapsedSec,
   position,
   weather,
   packageStatus,
@@ -39,20 +41,29 @@ function MetricsGrid({
   const coord = Array.isArray(position) ? `${position[0].toFixed(5)}, ${position[1].toFixed(5)}` : '-';
   const fmtKmOrM = (m: number) => (m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(0)} m`);
   const fmtEta = (s: number | null) => (s == null ? '-' : s >= 3600 ? `${Math.floor(s / 3600)}saat ${(Math.floor(s / 60) % 60)}dk` : `${Math.floor(s / 60)}dk ${Math.floor(s % 60)}sn`);
+  const fmtDur = (s: number | null | undefined) => {
+    if (!s && s !== 0) return '-';
+    const h = Math.floor((s as number) / 3600);
+    const m = Math.floor(((s as number) % 3600) / 60);
+    const sec = Math.floor((s as number) % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  };
   const items = [
-    { label: 'Drone Hizi', value: `${(Number(speedKmh)||0).toFixed(1)} km/sa` },
+    { label: 'Drone Hizi', value: `${(Number(speedKmh) || 0).toFixed(1)} km/sa` },
     { label: 'Mesafe', value: fmtKmOrM(distanceM) },
     { label: 'Toplam Mesafe', value: fmtKmOrM(totalDistanceM) },
     { label: 'Kalan Mesafe', value: fmtKmOrM(remainingM) },
     { label: 'ETA', value: fmtEta(etaSec) },
+    { label: 'Toplam Ucus Suresi', value: fmtDur(elapsedSec) },
     { label: 'Hava Durumu', value: weather },
     { label: 'Paket Durumu', value: packageStatus },
     { label: 'Paket Alis Subesi', value: pickupBranchCode },
     { label: 'Drone Seri No', value: droneSerial },
     { label: 'Irtifa', value: `${Math.round(altitudeM)} m` },
-    { label: 'Batarya', value: `${batteryPct.toFixed(0)}%` },
+    { label: 'Batarya', value: `${(Number(batteryPct) || 0).toFixed(0)}%` },
     { label: 'Teslimat Adresi', value: deliveryAddress, wrap: true },
-        { label: 'Drone Sagligi', value: droneHealth },
+    { label: 'Drone Sagligi', value: (droneHealth === 'Iyi' ? '\u0130yi' : droneHealth) },
     { label: 'Koordinat', value: coord, mono: true, wrap: true },
   ];
   return (
@@ -83,14 +94,14 @@ function Controls({ running, timeScale, speedKmh, onStart, onPause, onReset, onT
       <div className="flex items-center gap-2 ml-auto">
         <span className="text-sm text-slate-400">Zaman</span>
         <div className="inline-flex rounded-lg overflow-hidden border border-slate-700">
-          {[1,2,5,20].map((x) => (
-            <button key={x} onClick={() => onTimeScale(x)} className={`px-3 py-2 text-sm ${timeScale===x? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{x}x</button>
+          {[1, 2, 5, 20].map((x) => (
+            <button key={x} onClick={() => onTimeScale(x)} className={`px-3 py-2 text-sm ${timeScale === x ? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{x}x</button>
           ))}
         </div>
         <span className="text-sm text-slate-400 ml-3">Hiz</span>
         <div className="inline-flex rounded-lg overflow-hidden border border-slate-700">
-          {[10,20,40,60].map((v) => (
-            <button key={v} onClick={() => onSpeed(v)} className={`px-3 py-2 text-sm ${speedKmh===v? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{v}</button>
+          {[10, 20, 40, 60].map((v) => (
+            <button key={v} onClick={() => onSpeed(v)} className={`px-3 py-2 text-sm ${speedKmh === v ? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{v}</button>
           ))}
         </div>
       </div>
@@ -110,7 +121,7 @@ function App() {
     if (running || state.progress > 0) {
       const last = trailRef.current[trailRef.current.length - 1]
       const cur = state.position
-      if (!last || Math.hypot((cur[0]-last[0])*111000, (cur[1]-last[1])*90000) > 5) {
+      if (!last || Math.hypot((cur[0] - last[0]) * 111000, (cur[1] - last[1]) * 90000) > 5) {
         trailRef.current = [...trailRef.current, cur]
       }
     }
@@ -123,10 +134,13 @@ function App() {
   const statusLabel = state.status === 'Idle' ? 'Bosta' : state.status === 'EnRoute' ? 'Ucus Suruyor' : 'Varildi'
   const statusColor: any = state.status === 'Arrived' ? 'green' : running ? 'blue' : 'yellow'
   const weather = 'Acik, 24 C, Ruzgar 5 m/sn'
-  const packageStatus = state.status === 'Arrived' ? 'Teslim Edildi' : running ? 'Dagitimda' : 'Hazirlaniyor'
+  const packageStatus = state.status === 'Arrived' ? 'Teslim Edildi' : (state.progress > 0 ? 'Dagitimda' : 'Hazirlaniyor')
   const pickupBranchCode = 'BR-IST-012'
   const droneSerial = 'DRN-AX45-2025-001'
   const deliveryAddress = 'Bostanli Mah., 1803/1 Sk. No:12, Karsiyaka/Izmir'
+  const isPaused = !running && state.progress > 0 && state.status !== 'Arrived'
+  const startLabel = isPaused ? 'Devam Et' : 'Baslat'
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -138,18 +152,21 @@ function App() {
           <Controls
             running={running}
             timeScale={timeScale}
-            speedKmh={state.currentSpeedKmh}
+            speedKmh={speedKmh}
             onStart={() => setRunning(true)}
             onPause={() => setRunning(false)}
             onReset={() => { setRunning(false); api.reset(); }}
             onTimeScale={(v: number) => setTimeScale(v)}
-            onSpeed={(v: number) => setSpeedKmh(v)} startLabel={startLabel} />
+            onSpeed={(v: number) => setSpeedKmh(v)}
+            startLabel={startLabel}
+          />
           <MetricsGrid
-            speedKmh={state.currentSpeedKmh}
+            speedKmh={speedKmh}
             distanceM={state.distanceTraveledM}
             totalDistanceM={state.totalDistanceM}
             remainingM={state.remainingM}
             etaSec={state.etaSec}
+            elapsedSec={state.elapsedSec}
             position={state.position}
             weather={weather}
             packageStatus={packageStatus}
@@ -170,6 +187,7 @@ function App() {
 }
 
 export default App
+
 
 
 
