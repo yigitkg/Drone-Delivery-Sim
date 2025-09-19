@@ -40,8 +40,7 @@ function MetricsGrid({
 }: any) {
   const coord = Array.isArray(position) ? `${position[0].toFixed(5)}, ${position[1].toFixed(5)}` : '-';
   const fmtKmOrM = (m: number) => (m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(0)} m`);
-  const fmtEta = (s: number | null) => (s == null ? '-' : s >= 3600 ? `${Math.floor(s / 3600)}saat ${(Math.floor(s / 60) % 60)}dk` : `${Math.floor(s / 60)}dk ${Math.floor(s % 60)}sn`);
-  const fmtDur = (s: number | null | undefined) => {
+    const fmtDur = (s: number | null | undefined) => {
     if (!s && s !== 0) return '-';
     const h = Math.floor((s as number) / 3600);
     const m = Math.floor(((s as number) % 3600) / 60);
@@ -54,7 +53,6 @@ function MetricsGrid({
     { label: 'Mesafe', value: fmtKmOrM(distanceM) },
     { label: 'Toplam Mesafe', value: fmtKmOrM(totalDistanceM) },
     { label: 'Kalan Mesafe', value: fmtKmOrM(remainingM) },
-    { label: 'ETA', value: fmtEta(etaSec) },
     { label: 'Toplam Ucus Suresi', value: fmtDur(elapsedSec) },
     { label: 'Hava Durumu', value: weather },
     { label: 'Paket Durumu', value: packageStatus },
@@ -165,7 +163,6 @@ function App() {
             distanceM={state.distanceTraveledM}
             totalDistanceM={state.totalDistanceM}
             remainingM={state.remainingM}
-            etaSec={state.etaSec}
             elapsedSec={state.elapsedSec}
             position={state.position}
             weather={weather}
@@ -187,6 +184,8 @@ function App() {
 }
 
 export default App
+
+
 
 
 
