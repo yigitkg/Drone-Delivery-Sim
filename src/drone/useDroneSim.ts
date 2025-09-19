@@ -94,7 +94,10 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
         const remainingM = Math.max(0, totalM - distanceTraveledM);
         const remainingTimeAtTarget = targetMps > 0 ? remainingM / targetMps : Infinity;
         const rampUpFactor = Math.min(1, elapsedSec / 5);
-        const rampDownFactor = remainingTimeAtTarget > 5 ? 1 : Math.max(0, remainingTimeAtTarget / 5);
+        // Ease-out ramp-down over last 5 seconds: stays high until near the end, then drops fast
+        const rampDownFactor = remainingTimeAtTarget > 5
+          ? 1
+          : Math.max(0, 1 - Math.pow(1 - (remainingTimeAtTarget / 5), 3));
         const profileFactor = controls.running ? Math.min(rampUpFactor, rampDownFactor) : 0;
         const speedMps = Math.max(0, targetMps * profileFactor);
 
