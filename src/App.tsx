@@ -77,7 +77,7 @@ function MetricsGrid({
 function Controls({ running, timeScale, speedKmh, onStart, onPause, onReset, onTimeScale, onSpeed, startLabel }: any) {
   return (
     <div className="card p-4 flex flex-wrap items-center gap-3">
-      <button onClick={onStart} disabled={running} className="px-3 py-2 bg-emerald-600 disabled:opacity-50 hover:bg-emerald-500 rounded-lg"\>{startLabel || 'Baslat'}</button>
+      <button onClick={onStart} disabled={running} className="px-3 py-2 bg-emerald-600 disabled:opacity-50 hover:bg-emerald-500 rounded-lg">{startLabel || 'Baslat'}</button>
       <button onClick={onPause} disabled={!running} className="px-3 py-2 bg-slate-700 disabled:opacity-50 hover:bg-slate-600 rounded-lg">Duraklat</button>
       <button onClick={onReset} className="px-3 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg">Sifirla</button>
       <div className="flex items-center gap-2 ml-auto">
@@ -122,7 +122,7 @@ function App() {
 
   const statusLabel = state.status === 'Idle' ? 'Bosta' : state.status === 'EnRoute' ? 'Ucus Suruyor' : 'Varildi'
   const statusColor: any = state.status === 'Arrived' ? 'green' : running ? 'blue' : 'yellow'
-  const weather = 'Acik, 24°C, Ruzgar 5 m/sn'
+  const weather = 'Acik, 24 C, Ruzgar 5 m/sn'
   const packageStatus = state.status === 'Arrived' ? 'Teslim Edildi' : running ? 'Dagitimda' : 'Hazirlaniyor'
   const pickupBranchCode = 'BR-IST-012'
   const droneSerial = 'DRN-AX45-2025-001'
@@ -170,4 +170,6 @@ function App() {
 }
 
 export default App
+
+
 
