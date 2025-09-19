@@ -87,8 +87,9 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
 
         // Accel/decel model (m/s^2)
         const accel = 2.5 * timeScale;
-        const vAllowed = Math.sqrt(Math.max(0, 2 * accel * Math.max(0, s.remainingM)));
-        const desiredMps = Math.min(targetMps, vAllowed);
+        const remainingNow = Math.max(0, Math.max(0, totalM - distanceTraveledM));
+        const vAllowed = Math.sqrt(Math.max(0, 2 * accel * remainingNow));
+        const desiredMps = controls.running ? Math.min(targetMps, vAllowed) : 0; // no ramp if not running
         const curMps = (s.currentSpeedKmh ?? 0) / 3.6;
         const dtSec = dt / 1000;
         let nextMps = curMps;
@@ -118,7 +119,7 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
         }
 
         // Simple altitude model: cruise 60m AGL when en route, 0 when idle/arrived
-        const altitudeM = status === 'EnRoute' ? 60 : 0;
+        const altitudeM = controls.running ? 60 : 0;
 
         // Battery model: ~2% per km consumption based on ground distance
         const consumedPct = (clamped / 1000) * 2; // %
