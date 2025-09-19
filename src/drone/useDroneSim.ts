@@ -88,21 +88,23 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
         let distanceTraveledM = s.distanceTraveledM;
         let status: DroneStatus = s.status;
         const dtSec = dt / 1000;
+        const dtEffSec = dtSec * timeScale; // simulation time scaling
 
-        // Linear profile: ramp-up first 5s, ramp-down last 5s
-        const elapsedSec = controls.running && status !== 'Arrived' ? s.elapsedSec + dtSec : s.elapsedSec;
+        // Linear profile: ramp-up first 5s, ramp-down near arrival (aggressive ease-out)
+        const elapsedSec = controls.running && status !== 'Arrived' ? s.elapsedSec + dtEffSec : s.elapsedSec;
         const remainingM = Math.max(0, totalM - distanceTraveledM);
         const remainingTimeAtTarget = targetMps > 0 ? remainingM / targetMps : Infinity;
         const rampUpFactor = Math.min(1, elapsedSec / 5);
-        // Ease-out ramp-down over last 5 seconds: stays high until near the end, then drops fast
-        const rampDownFactor = remainingTimeAtTarget > 5
+        // Aggressive ease-out over the last 3 seconds
+        const rampWindow = 3;
+        const rampDownFactor = remainingTimeAtTarget > rampWindow
           ? 1
-          : Math.max(0, 1 - Math.pow(1 - (remainingTimeAtTarget / 5), 3));
+          : Math.max(0, 1 - Math.pow(1 - (remainingTimeAtTarget / rampWindow), 4));
         const profileFactor = controls.running ? Math.min(rampUpFactor, rampDownFactor) : 0;
         const speedMps = Math.max(0, targetMps * profileFactor);
 
         if (controls.running && status !== 'Arrived') {
-          distanceTraveledM += speedMps * dtSec;
+          distanceTraveledM += speedMps * dtEffSec;
           status = 'EnRoute';
         } else if (!controls.running && s.progress === 0) {
           status = 'Idle';
@@ -118,8 +120,8 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
         const [lng, lat] = along.geometry.coordinates as [number, number];
         const position: LatLng = [lat, lng];
 
-        // Arrived condition
-        if (progress >= 1 - 1e-6) {
+        // Arrived condition (tolerant): mark arrived when very close
+        if (remainingMAfter <= 0.5 || progress >= 0.999) {
           status = 'Arrived';
         }
 

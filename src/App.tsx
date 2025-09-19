@@ -129,7 +129,7 @@ function App() {
     return trailRef.current
   }, [state.position[0], state.position[1], running, state.status, state.progress])
 
-  const statusLabel = state.status === 'Idle' ? 'Bosta' : state.status === 'EnRoute' ? 'Ucus Suruyor' : 'Varildi'
+  const statusLabel = state.status === 'Idle' ? 'Bosta' : state.status === 'EnRoute' ? 'Ucus Suruyor' : 'Teslim Edildi'
   const statusColor: any = state.status === 'Arrived' ? 'green' : running ? 'blue' : 'yellow'
   const weather = 'Acik, 24 C, Ruzgar 5 m/sn'
   const packageStatus = state.status === 'Arrived' ? 'Teslim Edildi' : (state.progress > 0 ? 'Dagitimda' : 'Hazirlaniyor')
