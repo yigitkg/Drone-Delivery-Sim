@@ -144,6 +144,9 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
         remainingM: totalM,
         etaSec: null,
         status: 'Idle',
+        altitudeM: 0,
+        batteryPct: 100,
+        droneHealth: 'Iyi',
       });
     },
   };
