@@ -12,7 +12,7 @@ function Header() {
   return (
     <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/60 sticky top-0 z-10">
       <div className="flex items-center gap-3 text-xl font-semibold">
-        <span className="text-emerald-400">🛩️</span>
+        <span className="text-emerald-400">Drone</span>
         <span>Drone Teslimat Paneli</span>
       </div>
       <div className="text-sm text-slate-400">MVP Simulasyon</div>
@@ -52,7 +52,7 @@ function MetricsGrid({
     { label: 'Irtifa', value: `${Math.round(altitudeM)} m` },
     { label: 'Batarya', value: `${batteryPct.toFixed(0)}%` },
     { label: 'Teslimat Adresi', value: deliveryAddress, wrap: true },
-    { label: '    { label: 'Drone Sagligi', value: droneHealth },
+        { label: 'Drone Sagligi', value: droneHealth },
     { label: 'Koordinat', value: coord, mono: true, wrap: true },
   ];
   return (
@@ -170,6 +170,7 @@ function App() {
 }
 
 export default App
+
 
 
 
