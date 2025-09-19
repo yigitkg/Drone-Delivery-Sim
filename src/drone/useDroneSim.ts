@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import * as turf from '@turf/turf';
 
 export type LatLng = [number, number]; // [lat, lng]
@@ -22,6 +22,7 @@ export interface DroneSimState {
   altitudeM: number;
   batteryPct: number; // 0..100
   droneHealth: 'Iyi' | 'Dikkat' | 'Kritik';
+  currentSpeedKmh: number;
 }
 
 export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimControls) {
@@ -40,6 +41,7 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
       altitudeM: 0,
       batteryPct: 100,
       droneHealth: 'Iyi',
+      currentSpeedKmh: 0,
     };
   });
 
@@ -62,6 +64,7 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
       altitudeM: controls.running ? 60 : 0,
       batteryPct: 100,
       droneHealth: 'Iyi',
+      currentSpeedKmh: 0,
     });
   }, [start[0], start[1], end[0], end[1]]);
 
@@ -78,9 +81,21 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
 
       setState((s) => {
         const timeScale = controls.timeScale ?? 1;
-        const speedMps = (controls.speedKmh / 3.6) * timeScale;
+        const targetMps = (controls.speedKmh / 3.6) * timeScale;
         let distanceTraveledM = s.distanceTraveledM;
         let status: DroneStatus = s.status;
+
+        // Accel/decel model (m/s^2)
+        const accel = 2.5 * timeScale;
+        const vAllowed = Math.sqrt(Math.max(0, 2 * accel * Math.max(0, s.remainingM)));
+        const desiredMps = Math.min(targetMps, vAllowed);
+        const curMps = (s.currentSpeedKmh ?? 0) / 3.6;
+        const dtSec = dt / 1000;
+        let nextMps = curMps;
+        if (desiredMps > curMps) nextMps = Math.min(desiredMps, curMps + accel * dtSec);
+        else if (desiredMps < curMps) nextMps = Math.max(desiredMps, curMps - accel * dtSec);
+        const speedMps = Math.max(0, nextMps);
+
         if (controls.running && status !== 'Arrived') {
           distanceTraveledM += speedMps * (dt / 1000);
           status = 'EnRoute';
@@ -123,6 +138,7 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
           altitudeM,
           batteryPct,
           droneHealth,
+          currentSpeedKmh: speedMps * 3.6,
         };
       });
       rafRef.current = requestAnimationFrame(loop);
@@ -147,6 +163,7 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
         altitudeM: 0,
         batteryPct: 100,
         droneHealth: 'Iyi',
+        currentSpeedKmh: 0,
       });
     },
   };
