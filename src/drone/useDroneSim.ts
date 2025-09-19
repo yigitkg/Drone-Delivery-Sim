@@ -11,19 +11,7 @@ export interface DroneSimControls {
   timeScale?: number;
 }
 
-export interface DroneSimState {
-  position: LatLng;
-  progress: number; // 0..1
-  distanceTraveledM: number;
-  totalDistanceM: number;
-  remainingM: number;
-  etaSec: number | null;
-  status: DroneStatus;
-  altitudeM: number;
-  batteryPct: number; // 0..100
-  droneHealth: 'Iyi' | 'Dikkat' | 'Kritik';
-  currentSpeedKmh: number;
-}
+ param($m) $block = $m.Groups[1].Value; if ($block -notmatch 'elapsedSec') { $block += "`n  elapsedSec: number;" }; "export interface DroneSimState {" + $block + "`n}" 
 
 export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimControls) {
   const [state, setState] = useState<DroneSimState>(() => {
@@ -171,3 +159,4 @@ export function useDroneSim(start: LatLng, end: LatLng, controls: DroneSimContro
 
   return { state, api };
 }
+
