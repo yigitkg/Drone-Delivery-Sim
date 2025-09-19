@@ -52,7 +52,7 @@ function MetricsGrid({
     { label: 'Irtifa', value: `${Math.round(altitudeM)} m` },
     { label: 'Batarya', value: `${batteryPct.toFixed(0)}%` },
     { label: 'Teslimat Adresi', value: deliveryAddress, wrap: true },
-    { label: 'Drone Sağlığı', value: droneHealth === 'Iyi' ? 'İyi' : droneHealth },
+    { label: '    { label: 'Drone Sagligi', value: droneHealth },
     { label: 'Koordinat', value: coord, mono: true, wrap: true },
   ];
   return (
